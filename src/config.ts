@@ -30,8 +30,8 @@ export const OPENAI_MODELS = [
 ] as const;
 
 const DEFAULT_MODELS: Record<string, string> = {
-  anthropic: "claude-haiku-4-5-20251001",
-  openai: "gpt-4o-mini",
+  anthropic: "claude-opus-4-6",
+  openai: "gpt-5.2",
 };
 
 export const DEFAULT_LANGUAGE = "English";

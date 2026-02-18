@@ -1,115 +1,52 @@
 # agpipe
 
-A Unix-style command-line tool that pipes your instruction — and optionally piped stdin — to an LLM and streams the response to stdout.
-
-## Requirements
-
-- **Node.js** ≥ 18
-- An API key for your chosen provider: `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`
+A Unix-style CLI that pipes your instruction — and optionally piped stdin — to an LLM and streams the response to stdout.
 
 ## Installation
 
-### Global (recommended)
-
 ```bash
 npm install -g agpipe
-```
-
-### Local development
-
-```bash
-git clone https://github.com/your-username/agpipe.git
-cd agpipe
-npm install
-npm run build
-npm link      # makes `ag` available globally
+export ANTHROPIC_API_KEY="sk-ant-..."  # or OPENAI_API_KEY
 ```
 
 ## Usage
 
+```bash
+ag "What is the Unix pipe philosophy?"
+cat file.ts | ag "Explain this code"
+cat notes.txt | ag "Summarize this." | pbcopy
+ag   # interactive session
 ```
-ag [flags] [instruction...]
-<command> | ag [flags] [instruction...]
-```
 
-| Invocation           | Instruction source      | Context     |
-| -------------------- | ----------------------- | ----------- |
-| `ag "..."`           | argv                    | —           |
-| `cmd \| ag "..."`    | argv                    | piped stdin |
-| `ag` _(in terminal)_ | interactive `▶️` prompt | —           |
-| `cmd \| ag`          | piped stdin             | —           |
+| Invocation        | Instruction source      | Context     |
+| ----------------- | ----------------------- | ----------- |
+| `ag "..."`        | argv                    | —           |
+| `cmd \| ag "..."` | argv                    | piped stdin |
+| `ag`              | interactive `▶️` prompt | —           |
+| `cmd \| ag`       | piped stdin             | —           |
 
-In interactive mode, the session persists across turns (full conversation history is kept). Press **Enter** to submit, **Shift+Enter** to insert a newline, **Ctrl+C** or **Ctrl+D** (on empty input) to exit.
-
-> **Tip:** Quote argv instructions if there are metacharacters like `?`, `*`, and `[`. They are expanded by the shell before `ag` sees them, which causes errors if no files match. Quoting avoids this:
->
-> ```bash
-> ag "What is the Unix philosophy?"   # ✓
-> ag What is the Unix philosophy?     # ✗ — zsh expands ?
-> ```
+> **Tip:** Quote argv instructions to avoid shell metacharacter expansion (`?`, `*`, `[`).
 
 ## Flags
 
-| Flag                 | Alias | Description                                                                  |
-| -------------------- | ----- | ---------------------------------------------------------------------------- |
-| `--model`            | `-m`  | Show the current active model and provider, then exit.                       |
-| `--set-model [name]` |       | Persist a model to `~/.agpipe.json`; interactive picker if no name given.    |
-| `--lang`             |       | Show the current response language, then exit.                               |
-| `--set-lang [lang]`  |       | Persist a language to `~/.agpipe.json`; interactive picker if no lang given. |
-| `--list-models`      | `-l`  | Print all available models grouped by provider, then exit.                   |
+| Flag                  | Description                                                     |
+| --------------------- | --------------------------------------------------------------- |
+| `-m`, `--model`       | Show the current model and provider.                            |
+| `--set-model [name]`  | Set the default model; interactive picker if no name given.     |
+| `--lang`              | Show the current response language.                             |
+| `--set-lang [lang]`   | Set the response language; interactive picker if no lang given. |
+| `-l`, `--list-models` | List all available models.                                      |
 
-### `--model` / `-m`
+## Models
 
-```bash
-$ ag -m
-claude-haiku-4-5-20251001 (anthropic)
-```
-
-### `--set-model [name]`
-
-Persists a model to `~/.agpipe.json`. The provider is inferred automatically from the model name.
-
-With no argument, opens an interactive up/down picker:
-
-```bash
-ag --set-model          # interactive picker
-ag --set-model gpt-4o   # set directly
-```
-
-### `--lang` / `--set-lang [lang]`
-
-```bash
-$ ag --lang
-English
-```
-
-With no argument, `--set-lang` opens an interactive picker over a preset list of languages. With an argument, sets directly:
-
-```bash
-ag --set-lang            # interactive picker
-ag --set-lang 繁體中文    # set directly
-```
-
-### `--list-models` / `-l`
-
-```bash
-$ ag -l
-Anthropic models:
-  claude-opus-4-6
-  claude-sonnet-4-6
-  claude-haiku-4-5-20251001
-  ...
-
-OpenAI models:
-  gpt-4o
-  gpt-4o-mini
-  o1
-  ...
-```
+| Provider    | Default model    | Available models                                                                                                                    |
+| ----------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `anthropic` | `claude-opus-4-6` | `claude-opus-4-6`, `claude-sonnet-4-6`, `claude-haiku-4-5-20251001`, `claude-3-7-sonnet-20250219`, `claude-3-5-sonnet-20241022`, `claude-3-5-haiku-20241022`, `claude-3-opus-20240229`, `claude-3-haiku-20240307` |
+| `openai`    | `gpt-5.2`        | `gpt-5.2`, `gpt-5.1`, `gpt-5`, `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`, `gpt-4`, `gpt-3.5-turbo`, `o1`, `o1-mini`, `o3`, `o3-mini`, `o4-mini` |
 
 ## Configuration
 
-Settings are stored in `~/.agpipe.json` and updated by `--set-model` and `--set-lang`.
+Settings are stored in `~/.agpipe.json` and updated by `--set-model` / `--set-lang`.
 
 ```json
 {
@@ -119,66 +56,12 @@ Settings are stored in `~/.agpipe.json` and updated by `--set-model` and `--set-
 }
 ```
 
-### Environment variables
-
-| Variable            | Description                          |
-| ------------------- | ------------------------------------ |
-| `ANTHROPIC_API_KEY` | Required when using Anthropic models |
-| `OPENAI_API_KEY`    | Required when using OpenAI models    |
-
-#### macOS / Linux
-
-Add to your shell profile (`~/.zshrc` for zsh, `~/.bashrc` for bash), then restart your terminal:
+## Development
 
 ```bash
-export ANTHROPIC_API_KEY="sk-ant-..."
-export OPENAI_API_KEY="sk-..."
-```
-
-#### Windows
-
-**PowerShell** (persists for your user account — restart terminal after):
-
-```powershell
-[System.Environment]::SetEnvironmentVariable("ANTHROPIC_API_KEY", "sk-ant-...", "User")
-[System.Environment]::SetEnvironmentVariable("OPENAI_API_KEY", "sk-...", "User")
-```
-
-**Command Prompt** (also persists — restart terminal after):
-
-```cmd
-setx ANTHROPIC_API_KEY "sk-ant-..."
-setx OPENAI_API_KEY "sk-..."
-```
-
-You only need the key for the provider you plan to use.
-
-### Defaults
-
-| Provider    | Default model               |
-| ----------- | --------------------------- |
-| `anthropic` | `claude-haiku-4-5-20251001` |
-| `openai`    | `gpt-4o-mini`               |
-
-## Examples
-
-```bash
-# Ask a question
-ag "What is the Unix pipe philosophy?"
-
-# Pipe file contents as context
-cat notes.txt | ag "Summarize this."
-ag "Summarize this." < notes.txt
-
-# Chain with other tools
-cat file.ts | ag "Explain this code" | less -R
-cat file.txt | ag "Translate to Japanese" | pbcopy
-
-# Redirect output to a file
-ag "Explain TCP handshake" >> notes.txt
-
-# Switch models
-ag -m
-ag --set-model claude-sonnet-4-6
-ag -m
+git clone https://github.com/moneychien19/agpipe.git
+cd agpipe
+npm install
+npm run build
+npm link      # makes `ag` available globally
 ```
