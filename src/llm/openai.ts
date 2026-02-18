@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { buildSystemPrompt } from "./types.js";
+import { buildSystemPrompt, prepareMessages } from "./types.js";
 import type { LLMProvider, Message } from "./types.js";
 
 export class OpenAIProvider implements LLMProvider {
@@ -19,13 +19,9 @@ export class OpenAIProvider implements LLMProvider {
       stream: true,
       messages: [
         { role: "system", content: buildSystemPrompt(this.language) },
-        ...messages.map((m, i) => ({
+        ...prepareMessages(messages, context).map((m) => ({
           role: m.role as "user" | "assistant",
-          // Prepend piped context to the first user message only
-          content:
-            i === 0 && context
-              ? `<context>\n${context}\n</context>\n\n${m.content}`
-              : m.content,
+          content: m.content,
         })),
       ],
     });

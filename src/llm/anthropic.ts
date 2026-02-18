@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { buildSystemPrompt } from "./types.js";
+import { buildSystemPrompt, prepareMessages } from "./types.js";
 import type { LLMProvider, Message } from "./types.js";
 
 export class AnthropicProvider implements LLMProvider {
@@ -14,13 +14,9 @@ export class AnthropicProvider implements LLMProvider {
   }
 
   async *stream(messages: Message[], context?: string): AsyncIterable<string> {
-    const anthropicMessages = messages.map((m, i) => ({
+    const anthropicMessages = prepareMessages(messages, context).map((m) => ({
       role: m.role,
-      // Prepend piped context to the first user message only
-      content:
-        i === 0 && context
-          ? `<context>\n${context}\n</context>\n\n${m.content}`
-          : m.content,
+      content: m.content,
     }));
 
     const stream = this.client.messages.stream({

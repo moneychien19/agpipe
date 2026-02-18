@@ -7,6 +7,13 @@ export interface LLMProvider {
   stream(messages: Message[], context?: string): AsyncIterable<string>;
 }
 
+export function prepareMessages(messages: Message[], context?: string): Message[] {
+  if (!context) return messages;
+  return messages.map((m, i) =>
+    i === 0 ? { ...m, content: `<context>\n${context}\n</context>\n\n${m.content}` } : m
+  );
+}
+
 export function buildSystemPrompt(language: string): string {
   return `\
 You are a thoughtful technical guide embedded in a Unix terminal.
