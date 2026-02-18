@@ -1,0 +1,31 @@
+{
+  "name": "agpipe",
+  "version": "0.1.0",
+  "description": "Unix-style CLI filter that forwards instructions + stdin to an LLM and streams the output",
+  "keywords": ["cli", "llm", "pipe", "ai", "anthropic", "openai"],
+"engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "ag": "./dist/cli.js"
+  },
+  "main": "./dist/cli.js",
+  "files": [
+    "dist/",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup src/cli.ts --format cjs --no-splitting --clean",
+    "dev": "tsup src/cli.ts --format cjs --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "openai": "^4.85.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.7.0"
+  }
+}
