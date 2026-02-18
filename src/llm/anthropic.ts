@@ -13,7 +13,7 @@ export class AnthropicProvider implements LLMProvider {
     this.language = language;
   }
 
-  async *stream(messages: Message[], context?: string): AsyncIterable<string> {
+  async *stream(messages: Message[], context?: string, systemPrompt?: string): AsyncIterable<string> {
     const anthropicMessages = prepareMessages(messages, context).map((m) => ({
       role: m.role,
       content: m.content,
@@ -22,7 +22,7 @@ export class AnthropicProvider implements LLMProvider {
     const stream = this.client.messages.stream({
       model: this.model,
       max_tokens: 8096,
-      system: buildSystemPrompt(this.language),
+      system: systemPrompt ?? buildSystemPrompt(this.language),
       messages: anthropicMessages,
     });
 

@@ -11,6 +11,8 @@ export ANTHROPIC_API_KEY="sk-ant-..."  # or OPENAI_API_KEY
 
 ## Usage
 
+### Chat Mode (Default)
+
 ```bash
 ag "What is the Unix pipe philosophy?"
 cat file.ts | ag "Explain this code"
@@ -27,6 +29,17 @@ ag   # interactive session
 
 > **Tip:** Quote argv instructions to avoid shell metacharacter expansion (`?`, `*`, `[`).
 
+### Exec Mode (`-e`)
+
+Add `-e` to get a raw shell command instead of a text response. The model prefix is printed to stderr so the output is clean for piping.
+
+```bash
+ag -e "list all .ts files > 100 lines under this path"
+ag -e "find all node_modules directories under ~/Desktop" | bash
+cat error.log | ag -e "delete lines containing DEBUG" | bash
+ag -e   # interactive exec session
+```
+
 ## Flags
 
 | Flag                  | Description                                                     |
@@ -36,13 +49,14 @@ ag   # interactive session
 | `--lang`              | Show the current response language.                             |
 | `--set-lang [lang]`   | Set the response language; interactive picker if no lang given. |
 | `-l`, `--list-models` | List all available models.                                      |
+| `-e`, `--exec`        | Output a raw shell command instead of a text response.          |
 
 ## Models
 
-| Provider    | Default model    | Available models                                                                                                                    |
-| ----------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Provider    | Default model     | Available models                                                                                                                                                                                                  |
+| ----------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `anthropic` | `claude-opus-4-6` | `claude-opus-4-6`, `claude-sonnet-4-6`, `claude-haiku-4-5-20251001`, `claude-3-7-sonnet-20250219`, `claude-3-5-sonnet-20241022`, `claude-3-5-haiku-20241022`, `claude-3-opus-20240229`, `claude-3-haiku-20240307` |
-| `openai`    | `gpt-5.2`        | `gpt-5.2`, `gpt-5.1`, `gpt-5`, `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`, `gpt-4`, `gpt-3.5-turbo`, `o1`, `o1-mini`, `o3`, `o3-mini`, `o4-mini` |
+| `openai`    | `gpt-5.2`         | `gpt-5.2`, `gpt-5.1`, `gpt-5`, `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`, `gpt-4`, `gpt-3.5-turbo`, `o1`, `o1-mini`, `o3`, `o3-mini`, `o4-mini`                                                                      |
 
 ## Configuration
 

@@ -4,7 +4,7 @@ export interface Message {
 }
 
 export interface LLMProvider {
-  stream(messages: Message[], context?: string): AsyncIterable<string>;
+  stream(messages: Message[], context?: string, systemPrompt?: string): AsyncIterable<string>;
 }
 
 export function prepareMessages(messages: Message[], context?: string): Message[] {
@@ -12,6 +12,10 @@ export function prepareMessages(messages: Message[], context?: string): Message[
   return messages.map((m, i) =>
     i === 0 ? { ...m, content: `<context>\n${context}\n</context>\n\n${m.content}` } : m
   );
+}
+
+export function buildExecPrompt(): string {
+  return "Output ONLY a single executable shell command. No explanation, no markdown, no code fences. Just the raw command on a single line, ready to be piped directly to bash.";
 }
 
 export function buildSystemPrompt(language: string): string {

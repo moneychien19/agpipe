@@ -13,12 +13,12 @@ export class OpenAIProvider implements LLMProvider {
     this.language = language;
   }
 
-  async *stream(messages: Message[], context?: string): AsyncIterable<string> {
+  async *stream(messages: Message[], context?: string, systemPrompt?: string): AsyncIterable<string> {
     const stream = await this.client.chat.completions.create({
       model: this.model,
       stream: true,
       messages: [
-        { role: "system", content: buildSystemPrompt(this.language) },
+        { role: "system", content: systemPrompt ?? buildSystemPrompt(this.language) },
         ...prepareMessages(messages, context).map((m) => ({
           role: m.role as "user" | "assistant",
           content: m.content,

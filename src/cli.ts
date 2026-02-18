@@ -2,13 +2,15 @@
 import { loadConfig, persistModel, persistLanguage, ANTHROPIC_MODELS, OPENAI_MODELS, LANGUAGES } from "./config.js";
 import { createProvider } from "./llm/index.js";
 import type { Message } from "./llm/types.js";
+import { buildExecPrompt } from "./llm/types.js";
 import { readStdin } from "./stdin.js";
 import { pickFromList } from "./terminal.js";
 import { runInteractive } from "./interactive.js";
 
-function parseArgs(argv: string[]): { instruction: string; pendingAction?: "set-model" | "set-lang" } {
+function parseArgs(argv: string[]): { instruction: string; exec: boolean; pendingAction?: "set-model" | "set-lang" } {
   const args = argv.slice(2);
   const rest: string[] = [];
+  let exec = false;
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i]!;
@@ -23,7 +25,7 @@ function parseArgs(argv: string[]): { instruction: string; pendingAction?: "set-
         process.stderr.write(`Default model set to "${modelName}".\n`);
         process.exit(0);
       } else {
-        return { instruction: "", pendingAction: "set-model" };
+        return { instruction: "", exec: false, pendingAction: "set-model" };
       }
     } else if (arg === "--lang") {
       const config = loadConfig();
@@ -36,7 +38,7 @@ function parseArgs(argv: string[]): { instruction: string; pendingAction?: "set-
         process.stderr.write(`Response language set to "${lang}".\n`);
         process.exit(0);
       } else {
-        return { instruction: "", pendingAction: "set-lang" };
+        return { instruction: "", exec: false, pendingAction: "set-lang" };
       }
     } else if (arg === "--list-models" || arg === "-l") {
       process.stdout.write("Anthropic models:\n");
@@ -44,17 +46,19 @@ function parseArgs(argv: string[]): { instruction: string; pendingAction?: "set-
       process.stdout.write("\nOpenAI models:\n");
       for (const m of OPENAI_MODELS) process.stdout.write(`  ${m}\n`);
       process.exit(0);
+    } else if (arg === "--exec" || arg === "-e") {
+      exec = true;
     } else {
       rest.push(arg);
     }
   }
 
   // Join all remaining tokens — works whether or not the user quoted the prompt
-  return { instruction: rest.join(" ").trim() };
+  return { instruction: rest.join(" ").trim(), exec };
 }
 
 async function main() {
-  const { instruction: argInstruction, pendingAction } = parseArgs(process.argv);
+  const { instruction: argInstruction, exec, pendingAction } = parseArgs(process.argv);
 
   // Validate config up front, before waiting for any input
   let config;
@@ -104,19 +108,24 @@ async function main() {
     }
 
     const messages: Message[] = [{ role: "user", content: argInstruction }];
+    const systemPrompt = exec ? buildExecPrompt() : undefined;
     try {
-      process.stdout.write(`[${config.model}] `);
-      for await (const chunk of provider.stream(messages, context)) {
+      if (exec) {
+        process.stderr.write(`[${config.model}]\n`);
+      } else {
+        process.stdout.write(`[${config.model}] `);
+      }
+      for await (const chunk of provider.stream(messages, context, systemPrompt)) {
         process.stdout.write(chunk);
       }
-      process.stdout.write("\n");
+      if (!exec) process.stdout.write("\n");
     } catch (err) {
       process.stderr.write(`LLM error: ${(err as Error).message}\n`);
       process.exit(1);
     }
   } else if (process.stdin.isTTY) {
     // Interactive multi-turn session
-    await runInteractive(provider, config.model);
+    await runInteractive(provider, config.model, exec);
   } else {
     // Piped stdin with no argv instruction — treat pipe as single-turn instruction
     let instruction: string;
