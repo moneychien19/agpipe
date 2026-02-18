@@ -33,6 +33,18 @@ const DEFAULT_MODELS: Record<string, string> = {
 
 export const DEFAULT_LANGUAGE = "English";
 
+export const LANGUAGES = [
+  "English",
+  "繁體中文",
+  "簡體中文",
+  "Japanese",
+  "Korean",
+  "French",
+  "Spanish",
+  "German",
+  "Portuguese",
+] as const;
+
 export interface ResolvedConfig {
   provider: string;
   model: string;

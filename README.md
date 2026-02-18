@@ -41,14 +41,20 @@ ag [flags] [instruction...]
 
 In interactive mode, the session persists across turns (full conversation history is kept). Press **Enter** to submit, **Shift+Enter** to insert a newline, **Ctrl+C** or **Ctrl+D** (on empty input) to exit.
 
+Each response is prefixed with the active model name:
+
+```
+[claude-haiku-4-5-20251001] The Unix pipe philosophy is...
+```
+
 ## Flags
 
 | Flag                 | Alias | Description                                                        |
 | -------------------- | ----- | ------------------------------------------------------------------ |
 | `--model`            | `-m`  | Show the current active model and provider, then exit.             |
-| `--set-model <name>` |       | Persist a model as the new default in `~/.agpipe.json`, then exit. |
-| `--lang`             |       | Show the current response language, then exit.                     |
-| `--set-lang <lang>`  |       | Persist a response language in `~/.agpipe.json`, then exit.        |
+| `--set-model [name]` |       | Persist a model to `~/.agpipe.json`; interactive picker if no name given. |
+| `--lang`             |       | Show the current response language, then exit.                            |
+| `--set-lang [lang]`  |       | Persist a language to `~/.agpipe.json`; interactive picker if no lang given. |
 | `--list-models`      | `-l`  | Print all available models grouped by provider, then exit.         |
 
 ### `--model` / `-m`
@@ -58,24 +64,29 @@ $ ag -m
 claude-haiku-4-5-20251001 (anthropic)
 ```
 
-### `--set-model <name>`
+### `--set-model [name]`
 
 Persists a model to `~/.agpipe.json`. The provider is inferred automatically from the model name.
 
+With no argument, opens an interactive up/down picker:
+
 ```bash
-ag --set-model gpt-4o
-ag --set-model claude-sonnet-4-6
+ag --set-model          # interactive picker
+ag --set-model gpt-4o   # set directly
 ```
 
-### `--lang` / `--set-lang`
+### `--lang` / `--set-lang [lang]`
 
 ```bash
 $ ag --lang
 English
+```
 
-ag --set-lang 繁體中文
-ag --set-lang Japanese
-ag --set-lang English
+With no argument, `--set-lang` opens an interactive picker over a preset list of languages. With an argument, sets directly:
+
+```bash
+ag --set-lang            # interactive picker
+ag --set-lang 繁體中文    # set directly
 ```
 
 ### `--list-models` / `-l`

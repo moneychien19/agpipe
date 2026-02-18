@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 import { emitKeypressEvents } from "readline";
-import { loadConfig, persistModel, persistLanguage, ANTHROPIC_MODELS, OPENAI_MODELS } from "./config.js";
+import { loadConfig, persistModel, persistLanguage, ANTHROPIC_MODELS, OPENAI_MODELS, LANGUAGES } from "./config.js";
 import { createProvider, type LLMProvider } from "./llm/index.js";
 import type { Message } from "./llm/types.js";
 import { readStdin } from "./stdin.js";
 
-function parseArgs(argv: string[]): { instruction: string } {
+function parseArgs(argv: string[]): { instruction: string; pendingAction?: "set-model" | "set-lang" } {
   const args = argv.slice(2);
   const rest: string[] = [];
 
@@ -15,20 +15,28 @@ function parseArgs(argv: string[]): { instruction: string } {
       const config = loadConfig();
       process.stdout.write(`${config.model} (${config.provider})\n`);
       process.exit(0);
-    } else if (arg === "--set-model" && i + 1 < args.length) {
-      const modelName = args[++i]!;
-      persistModel(modelName);
-      process.stderr.write(`Default model set to "${modelName}".\n`);
-      process.exit(0);
+    } else if (arg === "--set-model") {
+      if (i + 1 < args.length && !args[i + 1]!.startsWith("-")) {
+        const modelName = args[++i]!;
+        persistModel(modelName);
+        process.stderr.write(`Default model set to "${modelName}".\n`);
+        process.exit(0);
+      } else {
+        return { instruction: "", pendingAction: "set-model" };
+      }
     } else if (arg === "--lang") {
       const config = loadConfig();
       process.stdout.write(`${config.language}\n`);
       process.exit(0);
-    } else if (arg === "--set-lang" && i + 1 < args.length) {
-      const lang = args[++i]!;
-      persistLanguage(lang);
-      process.stderr.write(`Response language set to "${lang}".\n`);
-      process.exit(0);
+    } else if (arg === "--set-lang") {
+      if (i + 1 < args.length && !args[i + 1]!.startsWith("-")) {
+        const lang = args[++i]!;
+        persistLanguage(lang);
+        process.stderr.write(`Response language set to "${lang}".\n`);
+        process.exit(0);
+      } else {
+        return { instruction: "", pendingAction: "set-lang" };
+      }
     } else if (arg === "--list-models" || arg === "-l") {
       process.stdout.write("Anthropic models:\n");
       for (const m of ANTHROPIC_MODELS) process.stdout.write(`  ${m}\n`);
@@ -52,6 +60,58 @@ interface KeyInfo {
   shift: boolean;
   ctrl: boolean;
   meta: boolean;
+}
+
+/**
+ * Interactive up/down picker. Returns the selected item, or null if cancelled.
+ * Pre-selects `current` if it appears in the list.
+ */
+function pickFromList(items: readonly string[], current?: string): Promise<string | null> {
+  return new Promise((resolve) => {
+    emitKeypressEvents(process.stdin);
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+
+    let selected = Math.max(0, current ? items.indexOf(current as string) : 0);
+
+    const render = (initial = false) => {
+      if (!initial) {
+        // Move cursor up to the first item line
+        process.stderr.write(`\x1b[${items.length}A`);
+      }
+      for (let i = 0; i < items.length; i++) {
+        const prefix = i === selected ? "❯ " : "  ";
+        process.stderr.write(`\x1b[2K${prefix}${items[i]}\r\n`);
+      }
+    };
+
+    const cleanup = () => {
+      process.stdin.removeListener("keypress", onKeypress);
+      process.stdin.setRawMode(false);
+    };
+
+    const onKeypress = (_ch: string | undefined, key: KeyInfo | undefined) => {
+      if (!key) return;
+      if (key.ctrl && key.name === "c") {
+        cleanup();
+        process.stderr.write("\n");
+        resolve(null);
+      } else if (key.name === "up") {
+        selected = Math.max(0, selected - 1);
+        render();
+      } else if (key.name === "down") {
+        selected = Math.min(items.length - 1, selected + 1);
+        render();
+      } else if (key.name === "return") {
+        cleanup();
+        process.stderr.write("\n");
+        resolve(items[selected] as string);
+      }
+    };
+
+    process.stdin.on("keypress", onKeypress);
+    render(true);
+  });
 }
 
 /**
@@ -147,7 +207,7 @@ function readMultilineInput(): Promise<string | null> {
 }
 
 /** Persistent interactive session: loops until Ctrl+C or EOF, keeping full history. */
-async function runInteractive(provider: LLMProvider): Promise<void> {
+async function runInteractive(provider: LLMProvider, model: string): Promise<void> {
   emitKeypressEvents(process.stdin);
 
   const history: Message[] = [];
@@ -164,7 +224,7 @@ async function runInteractive(provider: LLMProvider): Promise<void> {
 
     let assistantResponse = "";
     try {
-      process.stdout.write("\n");
+      process.stdout.write(`\n[${model}] `);
       for await (const chunk of provider.stream(messages)) {
         process.stdout.write(chunk);
         assistantResponse += chunk;
@@ -181,15 +241,35 @@ async function runInteractive(provider: LLMProvider): Promise<void> {
 }
 
 async function main() {
-  const { instruction: argInstruction } = parseArgs(process.argv);
+  const { instruction: argInstruction, pendingAction } = parseArgs(process.argv);
 
-  // Validate config and API key up front, before waiting for any input
+  // Validate config up front, before waiting for any input
   let config;
   try {
     config = loadConfig();
   } catch (err) {
     process.stderr.write(`Config error: ${(err as Error).message}\n`);
     process.exit(1);
+  }
+
+  // Interactive pickers (don't need a provider)
+  if (pendingAction === "set-model") {
+    const all = [...ANTHROPIC_MODELS, ...OPENAI_MODELS];
+    const chosen = await pickFromList(all, config.model);
+    if (chosen) {
+      persistModel(chosen);
+      process.stderr.write(`Default model set to "${chosen}".\n`);
+    }
+    process.exit(0);
+  }
+
+  if (pendingAction === "set-lang") {
+    const chosen = await pickFromList(LANGUAGES, config.language);
+    if (chosen) {
+      persistLanguage(chosen);
+      process.stderr.write(`Response language set to "${chosen}".\n`);
+    }
+    process.exit(0);
   }
 
   let provider;
@@ -212,6 +292,7 @@ async function main() {
 
     const messages: Message[] = [{ role: "user", content: argInstruction }];
     try {
+      process.stdout.write(`[${config.model}] `);
       for await (const chunk of provider.stream(messages, context)) {
         process.stdout.write(chunk);
       }
@@ -222,7 +303,7 @@ async function main() {
     }
   } else if (process.stdin.isTTY) {
     // Interactive multi-turn session
-    await runInteractive(provider);
+    await runInteractive(provider, config.model);
   } else {
     // Piped stdin with no argv instruction — treat pipe as single-turn instruction
     let instruction: string;
@@ -247,6 +328,7 @@ async function main() {
 
     const messages: Message[] = [{ role: "user", content: instruction }];
     try {
+      process.stdout.write(`[${config.model}] `);
       for await (const chunk of provider.stream(messages)) {
         process.stdout.write(chunk);
       }
