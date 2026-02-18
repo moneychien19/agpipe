@@ -32,30 +32,31 @@ ag [flags] [instruction...]
 <command> | ag [flags] [instruction...]
 ```
 
-| Invocation           | Instruction source       | Context     |
-| -------------------- | ------------------------ | ----------- |
-| `ag "..."`           | argv                     | —           |
-| `cmd \| ag "..."`    | argv                     | piped stdin |
-| `ag` _(in terminal)_ | interactive `▶️` prompt  | —           |
-| `cmd \| ag`          | piped stdin              | —           |
+| Invocation           | Instruction source      | Context     |
+| -------------------- | ----------------------- | ----------- |
+| `ag "..."`           | argv                    | —           |
+| `cmd \| ag "..."`    | argv                    | piped stdin |
+| `ag` _(in terminal)_ | interactive `▶️` prompt | —           |
+| `cmd \| ag`          | piped stdin             | —           |
 
 In interactive mode, the session persists across turns (full conversation history is kept). Press **Enter** to submit, **Shift+Enter** to insert a newline, **Ctrl+C** or **Ctrl+D** (on empty input) to exit.
 
-Each response is prefixed with the active model name:
-
-```
-[claude-haiku-4-5-20251001] The Unix pipe philosophy is...
-```
+> **Tip:** Quote argv instructions if there are metacharacters like `?`, `*`, and `[`. They are expanded by the shell before `ag` sees them, which causes errors if no files match. Quoting avoids this:
+>
+> ```bash
+> ag "What is the Unix philosophy?"   # ✓
+> ag What is the Unix philosophy?     # ✗ — zsh expands ?
+> ```
 
 ## Flags
 
-| Flag                 | Alias | Description                                                        |
-| -------------------- | ----- | ------------------------------------------------------------------ |
-| `--model`            | `-m`  | Show the current active model and provider, then exit.             |
-| `--set-model [name]` |       | Persist a model to `~/.agpipe.json`; interactive picker if no name given. |
-| `--lang`             |       | Show the current response language, then exit.                            |
+| Flag                 | Alias | Description                                                                  |
+| -------------------- | ----- | ---------------------------------------------------------------------------- |
+| `--model`            | `-m`  | Show the current active model and provider, then exit.                       |
+| `--set-model [name]` |       | Persist a model to `~/.agpipe.json`; interactive picker if no name given.    |
+| `--lang`             |       | Show the current response language, then exit.                               |
 | `--set-lang [lang]`  |       | Persist a language to `~/.agpipe.json`; interactive picker if no lang given. |
-| `--list-models`      | `-l`  | Print all available models grouped by provider, then exit.         |
+| `--list-models`      | `-l`  | Print all available models grouped by provider, then exit.                   |
 
 ### `--model` / `-m`
 
@@ -124,6 +125,33 @@ Settings are stored in `~/.agpipe.json` and updated by `--set-model` and `--set-
 | ------------------- | ------------------------------------ |
 | `ANTHROPIC_API_KEY` | Required when using Anthropic models |
 | `OPENAI_API_KEY`    | Required when using OpenAI models    |
+
+#### macOS / Linux
+
+Add to your shell profile (`~/.zshrc` for zsh, `~/.bashrc` for bash), then restart your terminal:
+
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..."
+export OPENAI_API_KEY="sk-..."
+```
+
+#### Windows
+
+**PowerShell** (persists for your user account — restart terminal after):
+
+```powershell
+[System.Environment]::SetEnvironmentVariable("ANTHROPIC_API_KEY", "sk-ant-...", "User")
+[System.Environment]::SetEnvironmentVariable("OPENAI_API_KEY", "sk-...", "User")
+```
+
+**Command Prompt** (also persists — restart terminal after):
+
+```cmd
+setx ANTHROPIC_API_KEY "sk-ant-..."
+setx OPENAI_API_KEY "sk-..."
+```
+
+You only need the key for the provider you plan to use.
 
 ### Defaults
 
