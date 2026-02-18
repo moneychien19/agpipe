@@ -2,12 +2,19 @@
   "name": "agpipe",
   "version": "0.1.0",
   "description": "Unix-style CLI filter that forwards instructions + stdin to an LLM and streams the output",
-  "keywords": ["cli", "llm", "pipe", "ai", "anthropic", "openai"],
-"engines": {
+  "keywords": [
+    "cli",
+    "llm",
+    "pipe",
+    "ai",
+    "anthropic",
+    "openai"
+  ],
+  "engines": {
     "node": ">=18"
   },
   "bin": {
-    "ag": "./dist/cli.js"
+    "ag": "dist/cli.js"
   },
   "main": "./dist/cli.js",
   "files": [
