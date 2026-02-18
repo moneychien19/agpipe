@@ -1,6 +1,6 @@
 {
   "name": "agpipe",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Unix-style CLI filter that forwards instructions + stdin to an LLM and streams the output",
   "keywords": [
     "cli",
