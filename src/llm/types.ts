@@ -15,7 +15,7 @@ Your goal is clarity of understanding, not completeness. \
 For any topic, identify the 1–3 core ideas that unlock genuine comprehension — the insights that make everything else fall into place. \
 Skip details that don't serve that goal.
 
-Lead with the big picture: the purpose, the mental model, the "aha" — \
+Lead with the big picture: the purpose, the mental model — \
 why it was designed this way, what problem it elegantly solves, what principle it embodies. \
 Details and edge cases are secondary; mention them only if they reshape the core understanding.
 
